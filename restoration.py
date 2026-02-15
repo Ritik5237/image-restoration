@@ -10,6 +10,7 @@
 import cv2
 import os
 import numpy as np
+import math
 
 
 # -----------------------------------------------------
@@ -19,7 +20,7 @@ def welcome():
     print("=" * 60)
     print(" IMAGE RESTORATION SYSTEM ")
     print("=" * 60)
-    print("Task 1, 2 & 3: Noise Modeling + Restoration Filters\n")
+    print("Task 1-4: Noise Modeling + Restoration + Evaluation\n")
 
 
 # -----------------------------------------------------
@@ -82,6 +83,26 @@ def gaussian_filter(image):
 
 
 # -----------------------------------------------------
+# Performance Evaluation (Task 4)
+# -----------------------------------------------------
+def calculate_mse(original, restored):
+
+    error = np.mean((original - restored) ** 2)
+    return error
+
+
+def calculate_psnr(original, restored):
+
+    mse = calculate_mse(original, restored)
+
+    if mse == 0:
+        return float("inf")
+
+    psnr = 10 * math.log10((255 ** 2) / mse)
+    return psnr
+
+
+# -----------------------------------------------------
 # Main Function
 # -----------------------------------------------------
 def main():
@@ -102,7 +123,7 @@ def main():
 
     for file in files:
 
-        print("Processing:", file)
+        print("\nProcessing:", file)
 
         path = os.path.join(image_folder, file)
 
@@ -117,30 +138,48 @@ def main():
         noisy_sp = add_salt_pepper(original)
 
         # -------- Task 3 --------
-        # For Gaussian Noise
         mean_g = mean_filter(noisy_gaussian)
         median_g = median_filter(noisy_gaussian)
         gauss_g = gaussian_filter(noisy_gaussian)
 
-        # For Salt & Pepper Noise
         mean_sp = mean_filter(noisy_sp)
         median_sp = median_filter(noisy_sp)
         gauss_sp = gaussian_filter(noisy_sp)
 
-        # -------- Display --------
-        cv2.imshow("Original", original)
+        # -------- Task 4: Evaluation --------
+        print("\n--- Gaussian Noise Restoration Metrics ---")
+        print("Mean Filter -> MSE:",
+              calculate_mse(original, mean_g),
+              "PSNR:",
+              calculate_psnr(original, mean_g))
 
-        cv2.imshow("Gaussian Noise", noisy_gaussian)
-        cv2.imshow("Mean Filter (Gaussian)", mean_g)
-        cv2.imshow("Median Filter (Gaussian)", median_g)
-        cv2.imshow("Gaussian Filter (Gaussian)", gauss_g)
+        print("Median Filter -> MSE:",
+              calculate_mse(original, median_g),
+              "PSNR:",
+              calculate_psnr(original, median_g))
 
-        cv2.imshow("Salt & Pepper Noise", noisy_sp)
-        cv2.imshow("Mean Filter (S&P)", mean_sp)
-        cv2.imshow("Median Filter (S&P)", median_sp)
-        cv2.imshow("Gaussian Filter (S&P)", gauss_sp)
+        print("Gaussian Filter -> MSE:",
+              calculate_mse(original, gauss_g),
+              "PSNR:",
+              calculate_psnr(original, gauss_g))
 
-        print("Press any key to continue...")
+        print("\n--- Salt & Pepper Noise Restoration Metrics ---")
+        print("Mean Filter -> MSE:",
+              calculate_mse(original, mean_sp),
+              "PSNR:",
+              calculate_psnr(original, mean_sp))
+
+        print("Median Filter -> MSE:",
+              calculate_mse(original, median_sp),
+              "PSNR:",
+              calculate_psnr(original, median_sp))
+
+        print("Gaussian Filter -> MSE:",
+              calculate_mse(original, gauss_sp),
+              "PSNR:",
+              calculate_psnr(original, gauss_sp))
+
+        print("\nPress any key to continue...")
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
