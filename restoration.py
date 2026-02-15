@@ -18,13 +18,21 @@ import math
 # -----------------------------------------------------
 def welcome():
     print("=" * 60)
-    print(" IMAGE RESTORATION SYSTEM ")
+    print(" IMAGE RESTORATION FOR SURVEILLANCE SYSTEM ")
     print("=" * 60)
-    print("Task 1-4: Noise Modeling + Restoration + Evaluation\n")
+    print("Final Version: Noise + Filtering + Evaluation\n")
 
 
 # -----------------------------------------------------
-# Load Image (Task 1)
+# Create Output Folder
+# -----------------------------------------------------
+def create_output_folder():
+    if not os.path.exists("outputs"):
+        os.makedirs("outputs")
+
+
+# -----------------------------------------------------
+# Load Image
 # -----------------------------------------------------
 def load_image(path):
 
@@ -41,7 +49,7 @@ def load_image(path):
 
 
 # -----------------------------------------------------
-# Noise Models (Task 2)
+# Noise Models
 # -----------------------------------------------------
 def add_gaussian_noise(image):
 
@@ -68,7 +76,7 @@ def add_salt_pepper(image):
 
 
 # -----------------------------------------------------
-# Restoration Filters (Task 3)
+# Filters
 # -----------------------------------------------------
 def mean_filter(image):
     return cv2.blur(image, (5, 5))
@@ -83,12 +91,10 @@ def gaussian_filter(image):
 
 
 # -----------------------------------------------------
-# Performance Evaluation (Task 4)
+# Performance Metrics
 # -----------------------------------------------------
 def calculate_mse(original, restored):
-
-    error = np.mean((original - restored) ** 2)
-    return error
+    return np.mean((original - restored) ** 2)
 
 
 def calculate_psnr(original, restored):
@@ -98,8 +104,30 @@ def calculate_psnr(original, restored):
     if mse == 0:
         return float("inf")
 
-    psnr = 10 * math.log10((255 ** 2) / mse)
-    return psnr
+    return 10 * math.log10((255 ** 2) / mse)
+
+
+# -----------------------------------------------------
+# Analytical Comparison
+# -----------------------------------------------------
+def analyze_performance(results, noise_type):
+
+    print(f"\n===== Performance Comparison ({noise_type}) =====")
+
+    best_filter = None
+    best_psnr = 0
+
+    for name, metrics in results.items():
+
+        mse_val, psnr_val = metrics
+        print(f"{name} -> MSE: {mse_val:.2f}, PSNR: {psnr_val:.2f} dB")
+
+        if psnr_val > best_psnr:
+            best_psnr = psnr_val
+            best_filter = name
+
+    print(f"\nBest filter for {noise_type}: {best_filter}")
+    print("===============================================")
 
 
 # -----------------------------------------------------
@@ -108,14 +136,9 @@ def calculate_psnr(original, restored):
 def main():
 
     welcome()
+    create_output_folder()
 
-    image_folder = "images"
-
-    if not os.path.exists(image_folder):
-        print("Images folder not found!")
-        return
-
-    files = os.listdir(image_folder)
+    files = os.listdir("images")
 
     if len(files) == 0:
         print("No images found!")
@@ -125,63 +148,77 @@ def main():
 
         print("\nProcessing:", file)
 
-        path = os.path.join(image_folder, file)
+        path = os.path.join("images", file)
 
-        # -------- Task 1 --------
         original = load_image(path)
 
         if original is None:
             continue
 
-        # -------- Task 2 --------
-        noisy_gaussian = add_gaussian_noise(original)
+        # -------- Add Noise --------
+        noisy_g = add_gaussian_noise(original)
         noisy_sp = add_salt_pepper(original)
 
-        # -------- Task 3 --------
-        mean_g = mean_filter(noisy_gaussian)
-        median_g = median_filter(noisy_gaussian)
-        gauss_g = gaussian_filter(noisy_gaussian)
+        # -------- Apply Filters --------
+        mean_g = mean_filter(noisy_g)
+        median_g = median_filter(noisy_g)
+        gauss_g = gaussian_filter(noisy_g)
 
         mean_sp = mean_filter(noisy_sp)
         median_sp = median_filter(noisy_sp)
         gauss_sp = gaussian_filter(noisy_sp)
 
-        # -------- Task 4: Evaluation --------
-        print("\n--- Gaussian Noise Restoration Metrics ---")
-        print("Mean Filter -> MSE:",
-              calculate_mse(original, mean_g),
-              "PSNR:",
-              calculate_psnr(original, mean_g))
+        # -------- Save Outputs --------
+        name = file.split(".")[0]
 
-        print("Median Filter -> MSE:",
-              calculate_mse(original, median_g),
-              "PSNR:",
-              calculate_psnr(original, median_g))
+        cv2.imwrite(f"outputs/{name}_original.png", original)
+        cv2.imwrite(f"outputs/{name}_gaussian_noise.png", noisy_g)
+        cv2.imwrite(f"outputs/{name}_salt_pepper.png", noisy_sp)
 
-        print("Gaussian Filter -> MSE:",
-              calculate_mse(original, gauss_g),
-              "PSNR:",
-              calculate_psnr(original, gauss_g))
+        cv2.imwrite(f"outputs/{name}_mean_g.png", mean_g)
+        cv2.imwrite(f"outputs/{name}_median_g.png", median_g)
+        cv2.imwrite(f"outputs/{name}_gauss_g.png", gauss_g)
 
-        print("\n--- Salt & Pepper Noise Restoration Metrics ---")
-        print("Mean Filter -> MSE:",
-              calculate_mse(original, mean_sp),
-              "PSNR:",
-              calculate_psnr(original, mean_sp))
+        cv2.imwrite(f"outputs/{name}_mean_sp.png", mean_sp)
+        cv2.imwrite(f"outputs/{name}_median_sp.png", median_sp)
+        cv2.imwrite(f"outputs/{name}_gauss_sp.png", gauss_sp)
 
-        print("Median Filter -> MSE:",
-              calculate_mse(original, median_sp),
-              "PSNR:",
-              calculate_psnr(original, median_sp))
+        # -------- Evaluation --------
+        results_gaussian = {
+            "Mean Filter": (
+                calculate_mse(original, mean_g),
+                calculate_psnr(original, mean_g)
+            ),
+            "Median Filter": (
+                calculate_mse(original, median_g),
+                calculate_psnr(original, median_g)
+            ),
+            "Gaussian Filter": (
+                calculate_mse(original, gauss_g),
+                calculate_psnr(original, gauss_g)
+            )
+        }
 
-        print("Gaussian Filter -> MSE:",
-              calculate_mse(original, gauss_sp),
-              "PSNR:",
-              calculate_psnr(original, gauss_sp))
+        results_sp = {
+            "Mean Filter": (
+                calculate_mse(original, mean_sp),
+                calculate_psnr(original, mean_sp)
+            ),
+            "Median Filter": (
+                calculate_mse(original, median_sp),
+                calculate_psnr(original, median_sp)
+            ),
+            "Gaussian Filter": (
+                calculate_mse(original, gauss_sp),
+                calculate_psnr(original, gauss_sp)
+            )
+        }
 
-        print("\nPress any key to continue...")
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # -------- Analytical Discussion --------
+        analyze_performance(results_gaussian, "Gaussian Noise")
+        analyze_performance(results_sp, "Salt & Pepper Noise")
+
+    print("\nAnalysis Complete Successfully!")
 
 
 # -----------------------------------------------------
