@@ -8,8 +8,8 @@
 # =====================================================
 
 import cv2
-import numpy as np
 import os
+import numpy as np
 
 
 # -----------------------------------------------------
@@ -19,64 +19,66 @@ def welcome():
     print("=" * 60)
     print(" IMAGE RESTORATION SYSTEM ")
     print("=" * 60)
-    print("Task 1 & Task 2: Image Loading + Noise Modeling\n")
+    print("Task 1, 2 & 3: Noise Modeling + Restoration Filters\n")
 
 
 # -----------------------------------------------------
-# Load and Preprocess Image
+# Load Image (Task 1)
 # -----------------------------------------------------
 def load_image(path):
 
     img = cv2.imread(path)
 
     if img is None:
-        print("Error loading:", path)
+        print("Error loading image:", path)
         return None
 
-    # Resize to standard size
     img = cv2.resize(img, (512, 512))
-
-    # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     return gray
 
 
 # -----------------------------------------------------
-# Add Gaussian Noise
+# Noise Models (Task 2)
 # -----------------------------------------------------
 def add_gaussian_noise(image):
 
     mean = 0
     std = 25
-
     gaussian = np.random.normal(mean, std, image.shape)
-
     noisy = image + gaussian
 
-    noisy = np.clip(noisy, 0, 255)
-
-    return noisy.astype(np.uint8)
+    return np.clip(noisy, 0, 255).astype(np.uint8)
 
 
-# -----------------------------------------------------
-# Add Salt and Pepper Noise
-# -----------------------------------------------------
-def add_salt_pepper_noise(image):
+def add_salt_pepper(image):
 
     noisy = image.copy()
+    prob = 0.02
 
-    prob = 0.02  # 2% noise
-
-    # Salt (white pixels)
     salt = np.random.rand(*image.shape) < prob
     noisy[salt] = 255
 
-    # Pepper (black pixels)
     pepper = np.random.rand(*image.shape) < prob
     noisy[pepper] = 0
 
     return noisy
+
+
+# -----------------------------------------------------
+# Restoration Filters (Task 3)
+# -----------------------------------------------------
+def mean_filter(image):
+    return cv2.blur(image, (5, 5))
+
+
+def median_filter(image):
+    return cv2.medianBlur(image, 5)
+
+
+def gaussian_filter(image):
+    return cv2.GaussianBlur(image, (5, 5), 0)
 
 
 # -----------------------------------------------------
@@ -95,7 +97,7 @@ def main():
     files = os.listdir(image_folder)
 
     if len(files) == 0:
-        print("No images found in images folder.")
+        print("No images found!")
         return
 
     for file in files:
@@ -104,19 +106,39 @@ def main():
 
         path = os.path.join(image_folder, file)
 
-        original_gray = load_image(path)
+        # -------- Task 1 --------
+        original = load_image(path)
 
-        if original_gray is None:
+        if original is None:
             continue
 
-        # ---------------- Add Noise ----------------
-        gaussian_noisy = add_gaussian_noise(original_gray)
-        salt_pepper_noisy = add_salt_pepper_noise(original_gray)
+        # -------- Task 2 --------
+        noisy_gaussian = add_gaussian_noise(original)
+        noisy_sp = add_salt_pepper(original)
 
-        # ---------------- Display ----------------
-        cv2.imshow("Original Grayscale", original_gray)
-        cv2.imshow("Gaussian Noise", gaussian_noisy)
-        cv2.imshow("Salt & Pepper Noise", salt_pepper_noisy)
+        # -------- Task 3 --------
+        # For Gaussian Noise
+        mean_g = mean_filter(noisy_gaussian)
+        median_g = median_filter(noisy_gaussian)
+        gauss_g = gaussian_filter(noisy_gaussian)
+
+        # For Salt & Pepper Noise
+        mean_sp = mean_filter(noisy_sp)
+        median_sp = median_filter(noisy_sp)
+        gauss_sp = gaussian_filter(noisy_sp)
+
+        # -------- Display --------
+        cv2.imshow("Original", original)
+
+        cv2.imshow("Gaussian Noise", noisy_gaussian)
+        cv2.imshow("Mean Filter (Gaussian)", mean_g)
+        cv2.imshow("Median Filter (Gaussian)", median_g)
+        cv2.imshow("Gaussian Filter (Gaussian)", gauss_g)
+
+        cv2.imshow("Salt & Pepper Noise", noisy_sp)
+        cv2.imshow("Mean Filter (S&P)", mean_sp)
+        cv2.imshow("Median Filter (S&P)", median_sp)
+        cv2.imshow("Gaussian Filter (S&P)", gauss_sp)
 
         print("Press any key to continue...")
         cv2.waitKey(0)
